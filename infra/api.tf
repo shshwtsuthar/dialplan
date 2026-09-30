@@ -1,11 +1,26 @@
 locals {
   # Function each route is served by.
   api_routes = {
-    "GET /v1/health" = "route"
+    "GET /v1/health"                     = "route"
+    "POST /v1/route"                     = "route"
+    "GET /v1/numbers/{did}/rules"        = "rules"
+    "PUT /v1/numbers/{did}/rules"        = "rules"
+    "GET /v1/numbers/{did}/audit"        = "rules"
+    "GET /v1/tenants/{tenantId}/numbers" = "rules"
+    "POST /v1/demo/reset"                = "reset"
   }
 
   api_functions = {
     route = module.route_function
+    rules = module.rules_function
+    reset = module.reset_function
+  }
+
+  # Requests per second (steady rate / burst). Everything else gets the
+  # stage default. The account's Lambda concurrency is the real ceiling.
+  api_throttles = {
+    "PUT /v1/numbers/{did}/rules" = { rate = 5, burst = 10 }
+    "POST /v1/demo/reset"         = { rate = 1, burst = 2 }
   }
 }
 
@@ -36,6 +51,16 @@ resource "aws_apigatewayv2_stage" "default" {
     throttling_burst_limit = 100
   }
 
+  dynamic "route_settings" {
+    for_each = local.api_throttles
+
+    content {
+      route_key              = route_settings.key
+      throttling_rate_limit  = route_settings.value.rate
+      throttling_burst_limit = route_settings.value.burst
+    }
+  }
+
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_access.arn
     format = jsonencode({
@@ -50,6 +75,9 @@ resource "aws_apigatewayv2_stage" "default" {
       sourceIp         = "$context.identity.sourceIp"
     })
   }
+
+  # Route settings can only reference routes that exist.
+  depends_on = [aws_apigatewayv2_route.this]
 }
 
 resource "aws_apigatewayv2_integration" "function" {
