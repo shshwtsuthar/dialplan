@@ -10,26 +10,6 @@ resource "aws_amplify_app" "web" {
     target = "/404.html"
     status = "404"
   }
-
-  custom_headers = yamlencode({
-    customHeaders = [
-      {
-        pattern = "**"
-        headers = [
-          { key = "Strict-Transport-Security", value = "max-age=31536000; includeSubDomains" },
-          { key = "X-Content-Type-Options", value = "nosniff" },
-          { key = "X-Frame-Options", value = "DENY" },
-          { key = "Referrer-Policy", value = "strict-origin-when-cross-origin" },
-        ]
-      },
-      {
-        pattern = "_next/static/**"
-        headers = [
-          { key = "Cache-Control", value = "public, max-age=31536000, immutable" },
-        ]
-      },
-    ]
-  })
 }
 
 resource "aws_amplify_branch" "main" {
