@@ -7,6 +7,7 @@ import {
   type RuleId,
   type WeeklyHours,
 } from '@dialplan/shared';
+import { DateTime } from 'luxon';
 
 export const RULE_TITLES: Record<RuleId, string> = {
   vip: 'VIP callers',
@@ -24,11 +25,19 @@ export const DESTINATION_KINDS: Record<DestinationKind, string> = {
 
 const SHORT_DAYS = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' } as const;
 
-/** "+16195550100" → "(619) 555-0100". Anything else is returned as is. */
+/** "Wed 30 Sep 2026, 07:01 PDT (UTC-07:00) in America/Los_Angeles": when a call arrived, in the business's time zone. */
+export function formatCallTime(localTime: string, timezone: string): string {
+  const local = DateTime.fromISO(localTime, { zone: timezone });
+  return `${local.toFormat("ccc d LLL yyyy, HH:mm ZZZZ '(UTC'ZZ')'")} in ${timezone}`;
+}
+
+/** "+16195550100" → "(619) 555-0100", "+442079460123" → "+44 20 7946 0123". Anything else is returned as is. */
 export function formatPhone(number: string): string {
   if (number === 'anonymous') return 'Withheld';
-  const match = /^\+1(\d{3})(\d{3})(\d{4})$/.exec(number);
-  return match ? `(${match[1]}) ${match[2]}-${match[3]}` : number;
+  const nanp = /^\+1(\d{3})(\d{3})(\d{4})$/.exec(number);
+  if (nanp) return `(${nanp[1]}) ${nanp[2]}-${nanp[3]}`;
+  const london = /^\+4420(\d{4})(\d{4})$/.exec(number);
+  return london ? `+44 20 ${london[1]} ${london[2]}` : number;
 }
 
 /** "Extension 201", "Voicemail box holiday", "External number (619) 555-0199". */

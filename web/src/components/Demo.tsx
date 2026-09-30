@@ -1,19 +1,22 @@
 'use client';
 
-import type { AuditEntry, Dialplan, NumberSummary, Rules } from '@dialplan/shared';
-import { IconAlertTriangle, IconRotate } from '@tabler/icons-react';
+import type { Dialplan, NumberSummary, Rules } from '@dialplan/shared';
+import { IconAlertTriangle, IconInfoCircle, IconRotate } from '@tabler/icons-react';
 import { DateTime } from 'luxon';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
+import type { StopProgress } from '@/lib/checks';
 import { nextWeekdayAt, simClock, upcomingThanksgiving, useSimClock } from '@/lib/clock';
 import { cn } from '@/lib/cn';
 import { DEFAULT_TIMEZONE, TENANT_ID } from '@/lib/config';
 import { formatPhone } from '@/lib/format';
+import type { Replay } from '@/lib/replay';
 import { themeAt } from '@/lib/theme';
 import { refreshNow } from '@/lib/useNow';
+import { AboutDialog } from './AboutDialog';
 import { BuildInfo } from './BuildInfo';
 import { CallPanel, OTHER_CALLERS, type Preset } from './CallPanel';
-import { DialplanPanel } from './dialplan/DialplanPanel';
+import { DialplanPanel, type RuleCheck } from './dialplan/DialplanPanel';
 import { ResultPanel, type CallState } from './ResultPanel';
 
 const NEW_CUSTOMER = OTHER_CALLERS[0].number;
@@ -23,9 +26,14 @@ export function Demo() {
   const [numbers, setNumbers] = useState<NumberSummary[]>();
   const [did, setDid] = useState<string>();
   const [dialplan, setDialplan] = useState<Dialplan>();
-  const [audit, setAudit] = useState<AuditEntry[]>([]);
   const [caller, setCaller] = useState<string>(NEW_CUSTOMER);
   const [call, setCall] = useState<CallState>({ status: 'idle' });
+  // How far down the rules the globe has taken a call, and the last call whose replay has finished.
+  const [checking, setChecking] = useState<{ id: number; progress: StopProgress }>();
+  const [settled, setSettled] = useState<number>();
+  const about = useRef<HTMLDialogElement>(null);
+  // Each call gets the next id; an answer for anything but the latest call is dropped.
+  const latestCall = useRef(0);
   const [lastCall, setLastCall] = useState<{ caller: string; at: number }>();
   const [error, setError] = useState<string>();
   const [resetting, setResetting] = useState(false);
@@ -40,12 +48,11 @@ export function Demo() {
     if (theme) document.documentElement.dataset.theme = theme;
   }, [theme]);
 
-  const show = useCallback(([plan, log]: [Dialplan, AuditEntry[]]) => {
+  const show = useCallback((plan: Dialplan) => {
     setDialplan(plan);
-    setAudit(log);
     refreshNow();
   }, []);
-  const load = useCallback(async (number: string) => show(await fetchNumber(number)), [show]);
+  const load = useCallback(async (number: string) => show(await api.dialplan(number)), [show]);
 
   useEffect(() => {
     api
@@ -60,27 +67,38 @@ export function Demo() {
   useEffect(() => {
     if (!did) return;
     let stale = false;
-    fetchNumber(did)
-      .then((data) => stale || show(data))
+    api
+      .dialplan(did)
+      .then((plan) => stale || show(plan))
       .catch((e: unknown) => stale || setError(errorMessage(e)));
     return () => {
       stale = true;
     };
   }, [did, show]);
 
-  async function placeCall(options: { caller?: string; at?: number } = {}) {
+  async function placeCall(options: { caller?: string; at?: number; replay?: Replay } = {}) {
     if (!did) return;
-    const who = options.caller ?? caller;
-    const at = options.at ?? simClock.now();
-    const timestamp = DateTime.fromMillis(at, { zone: timezone }).toISO({ suppressMilliseconds: true })!;
-    setCall({ status: 'routing' });
-    setLastCall({ caller: who, at });
+    const info = {
+      id: ++latestCall.current,
+      caller: options.caller ?? caller,
+      at: options.at ?? simClock.now(),
+      replay: options.replay ?? 'full',
+    };
+    const timestamp = DateTime.fromMillis(info.at, { zone: timezone }).toISO({ suppressMilliseconds: true })!;
+    setCall({ status: 'routing', ...info });
+    setLastCall({ caller: info.caller, at: info.at });
     try {
-      const result = await api.route({ did, caller: who, timestamp });
-      setCall({ status: 'answered', result, id: Date.now() });
+      const result = await api.route({ did, caller: info.caller, timestamp });
+      if (latestCall.current === info.id) setCall({ status: 'answered', result, ...info });
     } catch (e) {
-      setCall({ status: 'failed', message: errorMessage(e) });
+      if (latestCall.current === info.id) setCall({ status: 'failed', message: errorMessage(e), ...info });
     }
+  }
+
+  function clearCall() {
+    latestCall.current++;
+    setCall({ status: 'idle' });
+    setLastCall(undefined);
   }
 
   function runPreset(preset: Preset) {
@@ -115,20 +133,16 @@ export function Demo() {
     const saved = await api.saveRules(dialplan.did, dialplan.version, rules);
     setDialplan(saved);
     refreshNow();
-    api
-      .audit(saved.did)
-      .then((log) => setAudit(log.entries))
-      .catch(() => undefined);
-    // Re-route the last call against the new rules, so the effect is visible.
-    if (lastCall) void placeCall(lastCall);
+    // Re-route the last call against the new rules, so the effect is visible. It is
+    // already at the business, so only the rule checks replay.
+    if (lastCall) void placeCall({ ...lastCall, replay: 'checks' });
   }
 
   function selectNumber(number: string) {
     if (number === did) return;
     setDid(number);
     setDialplan(undefined);
-    setCall({ status: 'idle' });
-    setLastCall(undefined);
+    clearCall();
   }
 
   async function reset() {
@@ -137,8 +151,7 @@ export function Demo() {
     try {
       await api.reset();
       await load(did);
-      setCall({ status: 'idle' });
-      setLastCall(undefined);
+      clearCall();
       setError(undefined);
     } catch (e) {
       setError(errorMessage(e));
@@ -147,7 +160,15 @@ export function Demo() {
     }
   }
 
-  const result = call.status === 'answered' ? call.result : undefined;
+  // The Dialplan column marks each rule as the globe's replay reaches it, and all of them once it is over.
+  let check: RuleCheck | undefined;
+  if (call.status === 'routing' || call.status === 'answered') {
+    const result = call.status === 'answered' ? call.result : undefined;
+    let progress: RuleCheck['progress'];
+    if (result && call.id === settled) progress = 'all';
+    else if (result && call.id === checking?.id) progress = checking.progress;
+    check = { at: call.at, result, progress };
+  }
 
   return (
     <div className="flex min-h-dvh flex-col p-2.5 lg:p-5">
@@ -155,25 +176,36 @@ export function Demo() {
       <div className="m-auto w-full max-w-[1200px] border bg-surface">
         <header className="flex min-h-12 flex-wrap items-center gap-x-5 gap-y-1.5 border-b px-2.5 py-2">
           <h1 className="text-lg font-semibold tracking-tight">Harbor Auto</h1>
-          <nav aria-label="Phone numbers" className="flex divide-x border">
-            {(numbers ?? []).map((n) => (
-              <button
-                key={n.did}
-                type="button"
-                onClick={() => selectNumber(n.did)}
-                aria-pressed={n.did === did}
-                className={cn(
-                  'flex h-[30px] items-center gap-1.5 px-2.5 transition-colors',
-                  n.did === did ? 'bg-muted font-medium' : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                {n.name}
-                <span className="hidden text-[13px] font-normal text-muted-foreground tabular-nums sm:inline">
-                  {formatPhone(n.did)}
-                </span>
-              </button>
-            ))}
-          </nav>
+          <div className="flex items-center gap-2.5">
+            <nav aria-label="Phone numbers" className="flex divide-x border">
+              {(numbers ?? []).map((n) => (
+                <button
+                  key={n.did}
+                  type="button"
+                  onClick={() => selectNumber(n.did)}
+                  aria-pressed={n.did === did}
+                  className={cn(
+                    'flex h-[30px] items-center gap-1.5 px-2.5 transition-colors',
+                    n.did === did ? 'bg-muted font-medium' : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {n.name}
+                  <span className="hidden text-[13px] font-normal text-muted-foreground tabular-nums sm:inline">
+                    {formatPhone(n.did)}
+                  </span>
+                </button>
+              ))}
+            </nav>
+            <button
+              type="button"
+              onClick={() => about.current?.showModal()}
+              className="btn btn-outline btn-icon"
+              aria-label="About this demo"
+              title="About this demo"
+            >
+              <IconInfoCircle size={16} />
+            </button>
+          </div>
           <div className="flex w-full items-center justify-between gap-2.5 lg:ml-auto lg:w-auto">
             <BuildInfo />
             <button type="button" onClick={() => void reset()} disabled={resetting || !did} className="btn btn-outline">
@@ -208,22 +240,23 @@ export function Demo() {
           <DialplanPanel
             className="order-3 border-t lg:order-none lg:border-t-0 lg:border-l"
             dialplan={dialplan}
-            audit={audit}
-            trace={result?.trace}
+            check={check}
             now={clock?.now}
             onSave={saveRules}
             onReload={() => (did ? load(did) : Promise.resolve())}
           />
-          <ResultPanel className="order-2 border-t lg:order-none lg:border-t-0 lg:border-l" call={call} />
+          <ResultPanel
+            className="order-2 border-t lg:order-none lg:border-t-0 lg:border-l"
+            call={call}
+            dialplan={dialplan}
+            onCheck={(id, progress) => setChecking({ id, progress })}
+            onSettled={setSettled}
+          />
         </main>
       </div>
+      <AboutDialog ref={about} />
     </div>
   );
-}
-
-async function fetchNumber(did: string): Promise<[Dialplan, AuditEntry[]]> {
-  const [plan, log] = await Promise.all([api.dialplan(did), api.audit(did)]);
-  return [plan, log.entries];
 }
 
 function errorMessage(error: unknown): string {

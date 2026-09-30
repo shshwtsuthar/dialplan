@@ -37,7 +37,7 @@ export const HARBOR_AUTO: SeedTenant = {
         vip: {
           enabled: true,
           callers: [
-            { number: '+18585550142', name: 'Dana Whitfield (fleet account)' },
+            { number: '+13125550142', name: 'Dana Whitfield (fleet account)' },
             { number: '+16195550177', name: 'Marcus Lee (repeat buyer)' },
           ],
           destination: { kind: 'extension', target: '201', label: 'Rosa Alvarez, sales manager' },
@@ -71,7 +71,7 @@ export const HARBOR_AUTO: SeedTenant = {
       rules: {
         vip: {
           enabled: true,
-          callers: [{ number: '+18585550142', name: 'Dana Whitfield (fleet account)' }],
+          callers: [{ number: '+13125550142', name: 'Dana Whitfield (fleet account)' }],
           destination: { kind: 'extension', target: '310', label: 'Fleet service desk' },
         },
         holidays: {

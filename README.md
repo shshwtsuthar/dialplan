@@ -41,7 +41,7 @@ deployment API.
 | ----------------- | -------------------------------------------------------------------- |
 | `shared/`         | zod schemas: the contract between the API and the web app            |
 | `api/`            | Lambda handlers, the rule engine, the DynamoDB store, seed data      |
-| `web/`            | The one-page demo (Next.js, Tailwind, Luxon)                         |
+| `web/`            | The one-page demo (Next.js, Tailwind, Luxon, d3-geo)                 |
 | `infra/`          | Terraform for the app: table, functions, API, Amplify, schedule, alarms |
 | `infra/bootstrap` | One-time setup: state bucket, GitHub OIDC provider, CI roles         |
 | `scripts/`        | `deploy-web.sh` (used by CI) and `push-function.sh` (fast iteration) |
@@ -61,13 +61,13 @@ deployment API.
 ```sh
 curl -s -X POST 'https://ax1lwqgkui.execute-api.us-west-2.amazonaws.com/v1/route?explain=true' \
   -H 'content-type: application/json' \
-  -d '{"did":"+16195550100","caller":"+17605550123","timestamp":"2026-11-24T19:00:00-08:00"}'
+  -d '{"did":"+16195550100","caller":"+12125550123","timestamp":"2026-11-24T19:00:00-08:00"}'
 ```
 
 ```json
 {
   "did": "+16195550100",
-  "caller": "+17605550123",
+  "caller": "+12125550123",
   "decision": { "kind": "external", "target": "+16195550199", "label": "Answering service" },
   "matchedRule": "afterHours",
   "localTime": "2026-11-24T19:00:00.000-08:00",
@@ -78,7 +78,7 @@ curl -s -X POST 'https://ax1lwqgkui.execute-api.us-west-2.amazonaws.com/v1/route
   "coldStart": false,
   "trace": [
     { "stage": "clock", "result": "info", "detail": "2026-11-24T19:00:00-08:00 is Tue 24 Nov 2026, 19:00:00 PST (UTC-08:00) in America/Los_Angeles" },
-    { "stage": "vip", "result": "no_match", "detail": "+17605550123 is not among 2 VIP callers" },
+    { "stage": "vip", "result": "no_match", "detail": "+12125550123 is not among 2 VIP callers" },
     { "stage": "holidays", "result": "no_match", "detail": "2026-11-24 is not a holiday" },
     { "stage": "hours", "result": "no_match", "detail": "19:00 is outside Tuesday hours (08:00–18:00)" },
     { "stage": "afterHours", "result": "matched", "detail": "No earlier rule matched → Answering service" }
@@ -175,7 +175,7 @@ and the next apply puts `main`'s build back.
 
 ```sh
 npm ci
-npm test                      # 74 tests: engine, handlers, web helpers
+npm test                      # 129 tests: engine, handlers, web helpers
 npm run typecheck && npm run lint
 
 # Web app against the deployed API
