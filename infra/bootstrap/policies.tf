@@ -228,8 +228,15 @@ data "aws_iam_policy_document" "infra_write" {
   }
 
   statement {
-    sid       = "ApiGateway"
-    actions   = ["apigateway:POST", "apigateway:PUT", "apigateway:PATCH", "apigateway:DELETE"]
+    sid = "ApiGateway"
+    actions = [
+      "apigateway:POST",
+      "apigateway:PUT",
+      "apigateway:PATCH",
+      "apigateway:DELETE",
+      "apigateway:TagResource",
+      "apigateway:UntagResource",
+    ]
     resources = local.http_apis
   }
 
