@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@dialplan/shared'],
   images: { unoptimized: true },
+  agentRules: false,
 };
 
 export default nextConfig;
