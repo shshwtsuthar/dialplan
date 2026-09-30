@@ -6,8 +6,8 @@
 #
 # Uses your local AWS credentials (AWS_PROFILE, default "dialplan"). Only the
 # code changes; configuration, permissions and routes still go through
-# Terraform. The pushed code stays live until the next CI deploy that changes
-# this function's bundle, so merge (or revert) the change when you're done.
+# Terraform. Terraform compares the live code with the build from main, so
+# the next plan shows the difference and the next deploy replaces it.
 
 set -euo pipefail
 
@@ -24,4 +24,4 @@ aws lambda update-function-code \
   --query 'CodeSha256' --output text
 aws lambda wait function-updated-v2 --function-name "$function_name"
 
-echo "$function_name updated. Not deployed through CI: merge or revert when done."
+echo "$function_name updated. The next deploy from main will replace it."

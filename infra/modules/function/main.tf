@@ -60,16 +60,19 @@ resource "aws_iam_role_policy" "this" {
 }
 
 resource "aws_lambda_function" "this" {
-  function_name    = local.function_name
-  description      = var.description
-  role             = aws_iam_role.this.arn
-  runtime          = "nodejs24.x"
-  architectures    = ["arm64"]
-  handler          = "index.handler"
-  filename         = var.zip_path
-  source_code_hash = filebase64sha256(var.zip_path)
-  memory_size      = var.memory_size
-  timeout          = var.timeout
+  function_name = local.function_name
+  description   = var.description
+  role          = aws_iam_role.this.arn
+  runtime       = "nodejs24.x"
+  architectures = ["arm64"]
+  handler       = "index.handler"
+  filename      = var.zip_path
+  # Compared with the code actually deployed, unlike source_code_hash, so
+  # code pushed around Terraform (scripts/push-function.sh) shows up in the
+  # next plan and the next apply puts the build from main back.
+  code_sha256 = filebase64sha256(var.zip_path)
+  memory_size = var.memory_size
+  timeout     = var.timeout
 
   environment {
     variables = merge({ NODE_OPTIONS = "--enable-source-maps" }, var.environment)
