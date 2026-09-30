@@ -9,13 +9,10 @@ import {
   type RuleId,
   type Weekday,
 } from '@dialplan/shared';
-import { Plus, RotateCcw, Trash2, TriangleAlert, X } from 'lucide-react';
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { IconAlertTriangle, IconPlus, IconRefresh, IconTrash, IconX } from '@tabler/icons-react';
+import { Fragment, useState, type FormEvent, type ReactNode } from 'react';
 import { ApiRequestError } from '@/lib/api';
-import { cn } from '@/lib/cn';
 import { DESTINATION_KINDS, normalizePhone, RULE_TITLES } from '@/lib/format';
-import { RULE_ICONS } from '../icons';
-import { RULE_COLORS } from './RuleCard';
 
 interface Props {
   rule: RuleId;
@@ -31,7 +28,6 @@ export function RuleEditor({ rule, dialplan, onClose, onSave, onReload }: Props)
   const [errors, setErrors] = useState<string[]>([]);
   const [conflict, setConflict] = useState<number>();
   const [saving, setSaving] = useState(false);
-  const Icon = RULE_ICONS[rule];
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -64,22 +60,20 @@ export function RuleEditor({ rule, dialplan, onClose, onSave, onReload }: Props)
   const set = <K extends RuleId>(key: K, value: Rules[K]) => setRules((current) => ({ ...current, [key]: value }));
 
   return (
-    <form onSubmit={(event) => void submit(event)} className="p-3.5" aria-label={`Edit ${RULE_TITLES[rule]}`}>
-      <div className="mb-3 flex items-center gap-2.5">
-        <Icon className={cn('size-4', RULE_COLORS[rule])} />
-        <h3 className="font-medium text-slate-900">{RULE_TITLES[rule]}</h3>
-        <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-semibold text-sky-800">Editing</span>
+    <form onSubmit={(event) => void submit(event)} className="p-2.5" aria-label={`Edit ${RULE_TITLES[rule]}`}>
+      <div className="mb-1.5 flex h-8 items-center justify-between gap-2.5">
+        <h3 className="font-semibold">{RULE_TITLES[rule]}</h3>
         <button
           type="button"
           onClick={onClose}
-          className="button ml-auto px-1.5 text-slate-500 hover:bg-slate-100"
+          className="btn btn-ghost btn-icon -mr-2 text-muted-foreground hover:text-foreground"
           aria-label="Cancel editing"
         >
-          <X className="size-4" />
+          <IconX size={16} />
         </button>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-2.5">
         {rule === 'vip' && <VipFields value={rules.vip} onChange={(v) => set('vip', v)} />}
         {rule === 'holidays' && <HolidayFields value={rules.holidays} onChange={(v) => set('holidays', v)} />}
         {rule === 'hours' && <HoursFields value={rules.hours} onChange={(v) => set('hours', v)} />}
@@ -90,7 +84,7 @@ export function RuleEditor({ rule, dialplan, onClose, onSave, onReload }: Props)
       </div>
 
       {errors.length > 0 && (
-        <ul className="mt-3 space-y-1 rounded-lg bg-rose-50 p-2.5 text-xs text-rose-800" role="alert">
+        <ul className="mt-2.5 space-y-1 bg-error-surface p-2.5 text-[13px] text-error" role="alert">
           {errors.map((message) => (
             <li key={message}>{message}</li>
           ))}
@@ -98,22 +92,22 @@ export function RuleEditor({ rule, dialplan, onClose, onSave, onReload }: Props)
       )}
 
       {conflict !== undefined && (
-        <div className="mt-3 flex items-start gap-2 rounded-lg bg-amber-50 p-2.5 text-xs text-amber-900" role="alert">
-          <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+        <div className="mt-2.5 flex items-start gap-1.5 bg-warning-surface p-2.5 text-[13px] text-warning" role="alert">
+          <IconAlertTriangle size={16} className="mt-0.5 shrink-0" />
           <p className="flex-1">
             Someone else saved this dialplan while you were editing (it is now v{conflict}). Nothing was overwritten.
           </p>
-          <button type="button" onClick={() => void onReload()} className="button bg-amber-600 px-2 py-1 text-xs text-white hover:bg-amber-500">
-            <RotateCcw className="size-3.5" /> Reload
+          <button type="button" onClick={() => void onReload()} className="btn btn-outline text-foreground">
+            <IconRefresh size={16} /> Reload
           </button>
         </div>
       )}
 
-      <div className="mt-4 flex justify-end gap-2">
-        <button type="button" onClick={onClose} className="button text-slate-600 hover:bg-slate-100">
+      <div className="mt-2.5 flex justify-end gap-1.5">
+        <button type="button" onClick={onClose} className="btn btn-outline">
           Cancel
         </button>
-        <button type="submit" disabled={saving} className="button bg-sky-600 text-white hover:bg-sky-500">
+        <button type="submit" disabled={saving} className="btn btn-primary">
           {saving ? 'Saving…' : `Save as v${dialplan.version + 1}`}
         </button>
       </div>
@@ -127,8 +121,13 @@ export function RuleEditor({ rule, dialplan, onClose, onSave, onReload }: Props)
 
 function Toggle({ checked, onChange, children }: { checked: boolean; onChange: (v: boolean) => void; children: ReactNode }) {
   return (
-    <label className="flex items-center gap-2 text-sm text-slate-700">
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="size-4 accent-sky-600" />
+    <label className="flex h-9 items-center gap-2.5">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="size-4 accent-[var(--primary)]"
+      />
       {children}
     </label>
   );
@@ -136,16 +135,21 @@ function Toggle({ checked, onChange, children }: { checked: boolean; onChange: (
 
 function AddButton({ onClick, children }: { onClick: () => void; children: ReactNode }) {
   return (
-    <button type="button" onClick={onClick} className="button px-2 py-1 text-xs text-sky-700 hover:bg-sky-50">
-      <Plus className="size-3.5" /> {children}
+    <button type="button" onClick={onClick} className="btn btn-ghost -ml-2.5">
+      <IconPlus size={16} /> {children}
     </button>
   );
 }
 
 function RemoveButton({ onClick, label }: { onClick: () => void; label: string }) {
   return (
-    <button type="button" onClick={onClick} aria-label={label} className="button shrink-0 px-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600">
-      <Trash2 className="size-3.5" />
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className="btn btn-ghost btn-icon size-9 text-muted-foreground hover:text-error"
+    >
+      <IconTrash size={16} />
     </button>
   );
 }
@@ -159,9 +163,9 @@ function VipFields({ value, onChange }: { value: Rules['vip']; onChange: (v: Rul
       <Toggle checked={value.enabled} onChange={(enabled) => onChange({ ...value, enabled })}>
         Ring VIP callers straight through, whatever the time
       </Toggle>
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         {value.callers.map((caller, index) => (
-          <div key={index} className="flex gap-2">
+          <div key={index} className="flex gap-1.5">
             <input
               className="field"
               value={caller.name}
@@ -170,7 +174,7 @@ function VipFields({ value, onChange }: { value: Rules['vip']; onChange: (v: Rul
               aria-label={`VIP caller ${index + 1} name`}
             />
             <input
-              className="field max-w-[9.5rem] font-mono"
+              className="field max-w-[9.5rem] tabular-nums"
               value={caller.number}
               onChange={(e) => update(index, { number: e.target.value })}
               placeholder="+16195550166"
@@ -200,12 +204,12 @@ function HolidayFields({ value, onChange }: { value: Rules['holidays']; onChange
       <Toggle checked={value.enabled} onChange={(enabled) => onChange({ ...value, enabled })}>
         Use the holiday greeting on these dates
       </Toggle>
-      <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+      <div className="max-h-64 space-y-1.5 overflow-y-auto">
         {value.dates.map((holiday, index) => (
-          <div key={index} className="flex gap-2">
+          <div key={index} className="flex gap-1.5">
             <input
               type="date"
-              className="field max-w-[10rem]"
+              className="field max-w-[10rem] tabular-nums"
               value={holiday.date}
               onChange={(e) => update(index, { date: e.target.value })}
               aria-label={`Holiday ${index + 1} date`}
@@ -240,47 +244,66 @@ function HoursFields({ value, onChange }: { value: Rules['hours']; onChange: (v:
       <Toggle checked={value.enabled} onChange={(enabled) => onChange({ ...value, enabled })}>
         Route calls by opening hours
       </Toggle>
-      <div className="divide-y divide-slate-100 rounded-lg border border-slate-200">
+      {/* One grid per day, so the opening and closing times line up down the week. */}
+      <div className="divide-y border">
         {WEEKDAYS.map((day) => {
           const intervals = value.weekly[day];
+          const add =
+            intervals.length < 4 ? (
+              <button
+                type="button"
+                onClick={() => setDay(day, [...intervals, { open: intervals.at(-1)?.close ?? '09:00', close: '17:00' }])}
+                aria-label={`Add opening hours on ${WEEKDAY_NAMES[day]}`}
+                title="Add hours"
+                className="btn btn-ghost btn-icon size-9 text-muted-foreground hover:text-foreground"
+              >
+                <IconPlus size={16} />
+              </button>
+            ) : (
+              <span />
+            );
           return (
-            <div key={day} className="flex items-start gap-2 px-2.5 py-2">
-              <span className="w-10 shrink-0 pt-1.5 text-sm font-medium text-slate-700" title={WEEKDAY_NAMES[day]}>
+            <div
+              key={day}
+              className="grid grid-cols-[2.25rem_minmax(0,1fr)_auto_minmax(0,1fr)_2.25rem_2.25rem] items-center gap-x-1 gap-y-1.5 px-2.5 py-1.5"
+            >
+              <span
+                className="flex h-9 items-center self-start font-medium"
+                style={{ gridRow: `span ${Math.max(1, intervals.length)}` }}
+                title={WEEKDAY_NAMES[day]}
+              >
                 {WEEKDAY_NAMES[day].slice(0, 3)}
               </span>
-              <div className="flex flex-1 flex-wrap items-center gap-2">
-                {intervals.length === 0 && <span className="pt-1 text-sm text-slate-400">Closed</span>}
-                {intervals.map((interval, index) => (
-                  <div key={index} className="flex items-center gap-1">
-                    <input
-                      type="time"
-                      className="field w-[6.75rem] px-1.5 font-mono"
-                      value={interval.open}
-                      onChange={(e) => setDay(day, intervals.map((x, i) => (i === index ? { ...x, open: e.target.value } : x)))}
-                      aria-label={`${WEEKDAY_NAMES[day]} opens`}
-                    />
-                    <span className="text-slate-400">–</span>
-                    <input
-                      type="time"
-                      className="field w-[6.75rem] px-1.5 font-mono"
-                      value={interval.close}
-                      onChange={(e) => setDay(day, intervals.map((x, i) => (i === index ? { ...x, close: e.target.value } : x)))}
-                      aria-label={`${WEEKDAY_NAMES[day]} closes`}
-                    />
-                    <RemoveButton
-                      label={`Remove ${WEEKDAY_NAMES[day]} hours`}
-                      onClick={() => setDay(day, intervals.filter((_, i) => i !== index))}
-                    />
-                  </div>
-                ))}
-                {intervals.length < 4 && (
-                  <AddButton
-                    onClick={() => setDay(day, [...intervals, { open: intervals.at(-1)?.close ?? '09:00', close: '17:00' }])}
-                  >
-                    {intervals.length === 0 ? 'Open' : 'Add'}
-                  </AddButton>
-                )}
-              </div>
+              {intervals.length === 0 && (
+                <>
+                  <span className="col-span-4 text-muted-foreground">Closed</span>
+                  {add}
+                </>
+              )}
+              {intervals.map((interval, index) => (
+                <Fragment key={index}>
+                  <input
+                    type="time"
+                    className="field px-1 tabular-nums"
+                    value={interval.open}
+                    onChange={(e) => setDay(day, intervals.map((x, i) => (i === index ? { ...x, open: e.target.value } : x)))}
+                    aria-label={`${WEEKDAY_NAMES[day]} opens`}
+                  />
+                  <span className="text-muted-foreground">–</span>
+                  <input
+                    type="time"
+                    className="field px-1 tabular-nums"
+                    value={interval.close}
+                    onChange={(e) => setDay(day, intervals.map((x, i) => (i === index ? { ...x, close: e.target.value } : x)))}
+                    aria-label={`${WEEKDAY_NAMES[day]} closes`}
+                  />
+                  <RemoveButton
+                    label={`Remove ${WEEKDAY_NAMES[day]} hours`}
+                    onClick={() => setDay(day, intervals.filter((_, i) => i !== index))}
+                  />
+                  {index === intervals.length - 1 ? add : <span />}
+                </Fragment>
+              ))}
             </div>
           );
         })}
@@ -292,10 +315,10 @@ function HoursFields({ value, onChange }: { value: Rules['hours']; onChange: (v:
 function DestinationFields({ value, onChange }: { value: Destination; onChange: (v: Destination) => void }) {
   const placeholders = { ring_group: 'sales', extension: '201', voicemail: 'main', external: '+16195550199' };
   return (
-    <fieldset className="rounded-lg bg-slate-50 p-2.5">
+    <fieldset>
       <legend className="sr-only">Destination</legend>
-      <p className="mb-2 text-xs font-medium text-slate-500">Send matching calls to</p>
-      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-2">
+      <p className="label mb-1.5">Send matching calls to</p>
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-1.5">
         <select
           className="field"
           value={value.kind}
@@ -309,7 +332,7 @@ function DestinationFields({ value, onChange }: { value: Destination; onChange: 
           ))}
         </select>
         <input
-          className="field font-mono"
+          className="field"
           value={value.target}
           onChange={(e) => onChange({ ...value, target: e.target.value })}
           placeholder={placeholders[value.kind]}

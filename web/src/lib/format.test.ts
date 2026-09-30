@@ -1,11 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { formatPhone, normalizePhone, relativeTime, summarizeWeek } from './format';
+import { describeTarget, formatPhone, normalizePhone, relativeTime, summarizeWeek } from './format';
 
 describe('formatPhone', () => {
   it('formats North American numbers', () => {
     expect(formatPhone('+16195550100')).toBe('(619) 555-0100');
     expect(formatPhone('anonymous')).toBe('Withheld');
     expect(formatPhone('+442071838750')).toBe('+442071838750');
+  });
+});
+
+describe('describeTarget', () => {
+  it('names the kind of destination and its target', () => {
+    expect(describeTarget({ kind: 'extension', target: '201', label: 'Rosa' })).toBe('Extension 201');
+    expect(describeTarget({ kind: 'voicemail', target: 'holiday', label: 'Holiday greeting' })).toBe(
+      'Voicemail box holiday',
+    );
+    expect(describeTarget({ kind: 'external', target: '+16195550199', label: 'Answering service' })).toBe(
+      'External number (619) 555-0199',
+    );
   });
 });
 
