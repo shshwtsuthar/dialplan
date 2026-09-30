@@ -2,7 +2,105 @@
 
 /* One cool neutral palette in two modes. Colour only marks status: success
    for a matched rule and open hours, warning for cold starts and holidays,
-   error for failures. */
+   error for failures. The page is light while the sun is up in San Diego and
+   dark at night: the clock sets data-theme on <html>, and every colour
+   crossfades because each token is a registered, animatable property. */
+@property --background {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #eceff1;
+}
+
+@property --surface {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #f7f9fa;
+}
+
+@property --foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #1a2127;
+}
+
+@property --muted {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #e1e6e9;
+}
+
+@property --muted-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #5a6670;
+}
+
+@property --border {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #c5ced4;
+}
+
+@property --primary {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #1f2a31;
+}
+
+@property --primary-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #f7f9fa;
+}
+
+@property --ring {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #3d5a6c;
+}
+
+@property --success {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #1d7a4c;
+}
+
+@property --success-surface {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #e3f2ea;
+}
+
+@property --success-border {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #8fc9a8;
+}
+
+@property --warning {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #8f5507;
+}
+
+@property --warning-surface {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #fbf0dc;
+}
+
+@property --error {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #b3261e;
+}
+
+@property --error-surface {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #fbe7e5;
+}
+
 :root {
   color-scheme: light;
   --background: #eceff1;
@@ -21,28 +119,45 @@
   --warning-surface: #fbf0dc;
   --error: #b3261e;
   --error-surface: #fbe7e5;
+  transition-property:
+    --background,
+    --surface,
+    --foreground,
+    --muted,
+    --muted-foreground,
+    --border,
+    --primary,
+    --primary-foreground,
+    --ring,
+    --success,
+    --success-surface,
+    --success-border,
+    --warning,
+    --warning-surface,
+    --error,
+    --error-surface;
+  transition-duration: 1.5s;
+  transition-timing-function: ease;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    --background: #111619;
-    --surface: #171d21;
-    --foreground: #e4e9ec;
-    --muted: #222a30;
-    --muted-foreground: #93a0a8;
-    --border: #2c363d;
-    --primary: #e1e6e9;
-    --primary-foreground: #171d21;
-    --ring: #8fb0c2;
-    --success: #5fd197;
-    --success-surface: #13281d;
-    --success-border: #2b5a40;
-    --warning: #e9b35e;
-    --warning-surface: #2d2211;
-    --error: #f08a83;
-    --error-surface: #2e1614;
-  }
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --background: #111619;
+  --surface: #171d21;
+  --foreground: #e4e9ec;
+  --muted: #222a30;
+  --muted-foreground: #93a0a8;
+  --border: #2c363d;
+  --primary: #e1e6e9;
+  --primary-foreground: #171d21;
+  --ring: #8fb0c2;
+  --success: #5fd197;
+  --success-surface: #13281d;
+  --success-border: #2b5a40;
+  --warning: #e9b35e;
+  --warning-surface: #2d2211;
+  --error: #f08a83;
+  --error-surface: #2e1614;
 }
 
 @theme inline {

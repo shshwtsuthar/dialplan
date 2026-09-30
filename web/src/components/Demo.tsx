@@ -9,6 +9,7 @@ import { nextWeekdayAt, simClock, upcomingThanksgiving, useSimClock } from '@/li
 import { cn } from '@/lib/cn';
 import { DEFAULT_TIMEZONE, TENANT_ID } from '@/lib/config';
 import { formatPhone } from '@/lib/format';
+import { themeAt } from '@/lib/theme';
 import { refreshNow } from '@/lib/useNow';
 import { BuildInfo } from './BuildInfo';
 import { CallPanel, OTHER_CALLERS, type Preset } from './CallPanel';
@@ -30,6 +31,14 @@ export function Demo() {
   const [resetting, setResetting] = useState(false);
 
   const timezone = dialplan?.timezone ?? DEFAULT_TIMEZONE;
+  const local = clock ? DateTime.fromMillis(clock.now, { zone: timezone }) : undefined;
+  const hour = local ? local.hour + local.minute / 60 : undefined;
+  const theme = hour === undefined ? undefined : themeAt(hour);
+
+  // Light while the sun is up in San Diego, dark at night; the colours crossfade in CSS.
+  useEffect(() => {
+    if (theme) document.documentElement.dataset.theme = theme;
+  }, [theme]);
 
   const show = useCallback(([plan, log]: [Dialplan, AuditEntry[]]) => {
     setDialplan(plan);
@@ -141,8 +150,9 @@ export function Demo() {
   const result = call.status === 'answered' ? call.result : undefined;
 
   return (
-    <div className="mx-auto max-w-[1200px] p-2.5 lg:p-5">
-      <div className="border bg-surface">
+    <div className="flex min-h-dvh flex-col p-2.5 lg:p-5">
+      {/* Centred both ways while it fits; taller than the window, it starts at the top and scrolls. */}
+      <div className="m-auto w-full max-w-[1200px] border bg-surface">
         <header className="flex min-h-12 flex-wrap items-center gap-x-5 gap-y-1.5 border-b px-2.5 py-2">
           <h1 className="text-lg font-semibold tracking-tight">Harbor Auto</h1>
           <nav aria-label="Phone numbers" className="flex divide-x border">

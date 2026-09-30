@@ -104,10 +104,6 @@ export function CallPanel(props: Props) {
         </ul>
       </div>
 
-      <p className="border-t p-2.5 text-[13px] text-muted-foreground">
-        This page plays the phone switch: each call asks <code className="bg-muted px-1 text-foreground">POST /v1/route</code>{' '}
-        where it should ring.
-      </p>
     </Column>
   );
 }
