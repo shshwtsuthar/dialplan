@@ -1,1 +1,71 @@
 @import 'tailwindcss';
+
+@theme inline {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl bg-white/90 shadow-lg ring-1 shadow-slate-900/10 ring-slate-900/5 backdrop-blur-md;
+  }
+
+  .field {
+    @apply w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-900 shadow-xs focus:border-sky-500 focus:ring-2 focus:ring-sky-500/30 focus:outline-none;
+  }
+
+  .button {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50;
+  }
+}
+
+/* A sparse, tiled field of stars for the night sky. */
+.stars {
+  background-image:
+    radial-gradient(1.5px 1.5px at 20px 30px, #fff, transparent),
+    radial-gradient(1px 1px at 90px 120px, #fff, transparent),
+    radial-gradient(1px 1px at 160px 60px, #e0e7ff, transparent),
+    radial-gradient(1.5px 1.5px at 230px 170px, #fff, transparent),
+    radial-gradient(1px 1px at 300px 40px, #fff, transparent),
+    radial-gradient(1px 1px at 340px 210px, #c7d2fe, transparent),
+    radial-gradient(1.5px 1.5px at 60px 250px, #fff, transparent),
+    radial-gradient(1px 1px at 190px 280px, #fff, transparent);
+  background-size: 360px 300px;
+}
+
+@keyframes ring-out {
+  from {
+    transform: scale(0.9);
+    opacity: 0.6;
+  }
+  to {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+.ring-out {
+  animation: ring-out 1.4s ease-out infinite;
+}
+
+@keyframes settle {
+  from {
+    transform: translateY(6px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.settle {
+  animation: settle 0.35s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring-out,
+  .settle {
+    animation: none;
+  }
+}

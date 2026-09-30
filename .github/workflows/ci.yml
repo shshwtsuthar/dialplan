@@ -196,6 +196,7 @@ jobs:
           NEXT_PUBLIC_API_URL: ${{ steps.infra.outputs.api_url }}
           NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}
           NEXT_PUBLIC_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          NEXT_PUBLIC_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
       - name: Deploy web to Amplify
         run: scripts/deploy-web.sh "$APP_ID" "$BRANCH" web/out
         env:
