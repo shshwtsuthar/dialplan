@@ -13,3 +13,7 @@ output "amplify_app_id" {
 output "amplify_branch" {
   value = aws_amplify_branch.main.branch_name
 }
+
+output "table_name" {
+  value = aws_dynamodb_table.main.name
+}

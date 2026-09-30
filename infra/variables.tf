@@ -9,3 +9,9 @@ variable "local_web_origins" {
   type        = list(string)
   default     = ["http://localhost:3000"]
 }
+
+variable "alarm_email" {
+  description = "Optional address to email when an alarm changes state (confirm the subscription email)."
+  type        = string
+  default     = null
+}
