@@ -15,7 +15,9 @@ import { zipSync } from 'fflate';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const handlersDir = path.join(root, 'src/handlers');
 const distDir = path.join(root, 'dist');
-const ZIP_MTIME = new Date('2000-01-01T00:00:00Z');
+// Zip entries store local wall-clock time, so build the date from local
+// components: every machine then writes the same bytes, whatever its zone.
+const ZIP_MTIME = new Date(2000, 0, 1);
 
 const available = (await readdir(handlersDir))
   .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'))
