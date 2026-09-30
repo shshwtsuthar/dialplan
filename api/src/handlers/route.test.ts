@@ -1,5 +1,5 @@
 import { ApiError, HealthResponse, RouteResponse } from '@dialplan/shared';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { body, httpEvent, MemoryStore } from '../testing';
 import { createHandler } from './route';
 
@@ -69,11 +69,14 @@ describe('POST /v1/route', () => {
     expect(ApiError.parse(body(res)).error).toBe('invalid_json');
   });
 
-  it('turns unexpected failures into a 500 without leaking details', async () => {
-    const failing = createHandler({ getDialplan: () => Promise.reject(new Error('boom')) });
+  it('turns unexpected failures into a logged 500 without leaking details', async () => {
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const failing = createHandler({ getDialplan: () => Promise.reject(new Error('DynamoDB is down')) });
     const res = await failing(httpEvent('POST /v1/route', { body: tuesday7pm }));
     expect(res.statusCode).toBe(500);
     expect(body(res)).toEqual({ error: 'internal', message: 'Something went wrong' });
+    expect(logged).toHaveBeenCalledWith('Unhandled error', expect.objectContaining({ routeKey: 'POST /v1/route' }));
+    logged.mockRestore();
   });
 });
 
