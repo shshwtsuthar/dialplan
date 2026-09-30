@@ -63,6 +63,13 @@ module "reset_function" {
   ]
 }
 
+# New IAM permissions can take a couple of minutes to reach DynamoDB, so
+# wait before the first invocation after the reset function's policy changes.
+resource "time_sleep" "reset_policy_propagation" {
+  create_duration = "2m"
+  triggers        = { policy = module.reset_function.policy_json }
+}
+
 # Seed the table on first deploy, and again whenever the seed data changes.
 resource "aws_lambda_invocation" "seed" {
   function_name = module.reset_function.function_name
@@ -72,4 +79,6 @@ resource "aws_lambda_invocation" "seed" {
     table = aws_dynamodb_table.main.arn
     seed  = filesha256("${path.module}/../api/src/seed.ts")
   }
+
+  depends_on = [time_sleep.reset_policy_propagation]
 }
