@@ -13,10 +13,16 @@ resource "aws_iam_openid_connect_provider" "github" {
   client_id_list = ["sts.amazonaws.com"]
 }
 
+locals {
+  github_owner   = split("/", var.github_repository)[0]
+  github_repo    = split("/", var.github_repository)[1]
+  github_subject = "repo:${local.github_owner}@${var.github_owner_id}/${local.github_repo}@${var.github_repository_id}"
+}
+
 data "aws_iam_policy_document" "github_trust" {
   for_each = {
-    plan   = "repo:${var.github_repository}:pull_request"
-    deploy = "repo:${var.github_repository}:environment:${var.github_environment}"
+    plan   = "${local.github_subject}:pull_request"
+    deploy = "${local.github_subject}:environment:${var.github_environment}"
   }
 
   statement {
