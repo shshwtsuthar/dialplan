@@ -1,0 +1,27 @@
+{
+  "name": "@dialplan/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "typecheck": "next typegen && tsc --noEmit"
+  },
+  "dependencies": {
+    "@dialplan/shared": "*",
+    "luxon": "^3.7.2",
+    "next": "^16.3.7",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@next/eslint-plugin-next": "^16.3.7",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/luxon": "^3.7.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "tailwindcss": "^4.3.3"
+  }
+}
