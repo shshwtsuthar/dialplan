@@ -1,6 +1,7 @@
 import {
   formatInterval,
   WEEKDAYS,
+  type Destination,
   type DestinationKind,
   type OpenInterval,
   type RuleId,
@@ -28,6 +29,12 @@ export function formatPhone(number: string): string {
   if (number === 'anonymous') return 'Withheld';
   const match = /^\+1(\d{3})(\d{3})(\d{4})$/.exec(number);
   return match ? `(${match[1]}) ${match[2]}-${match[3]}` : number;
+}
+
+/** "Extension 201", "Voicemail box holiday", "External number (619) 555-0199". */
+export function describeTarget({ kind, target }: Destination): string {
+  if (kind === 'voicemail') return `Voicemail box ${target}`;
+  return `${DESTINATION_KINDS[kind]} ${kind === 'external' ? formatPhone(target) : target}`;
 }
 
 /** Groups consecutive days with the same hours: [["Mon–Fri", "08:00–18:00"], ["Sun", "Closed"]]. */

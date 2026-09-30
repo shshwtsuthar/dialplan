@@ -1,70 +1,142 @@
 @import 'tailwindcss';
 
+/* One cool neutral palette in two modes. Colour only marks status: success
+   for a matched rule and open hours, warning for cold starts and holidays,
+   error for failures. */
+:root {
+  color-scheme: light;
+  --background: #eceff1;
+  --surface: #f7f9fa;
+  --foreground: #1a2127;
+  --muted: #e1e6e9;
+  --muted-foreground: #5a6670;
+  --border: #c5ced4;
+  --primary: #1f2a31;
+  --primary-foreground: #f7f9fa;
+  --ring: #3d5a6c;
+  --success: #1d7a4c;
+  --success-surface: #e3f2ea;
+  --success-border: #8fc9a8;
+  --warning: #8f5507;
+  --warning-surface: #fbf0dc;
+  --error: #b3261e;
+  --error-surface: #fbe7e5;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --background: #111619;
+    --surface: #171d21;
+    --foreground: #e4e9ec;
+    --muted: #222a30;
+    --muted-foreground: #93a0a8;
+    --border: #2c363d;
+    --primary: #e1e6e9;
+    --primary-foreground: #171d21;
+    --ring: #8fb0c2;
+    --success: #5fd197;
+    --success-surface: #13281d;
+    --success-border: #2b5a40;
+    --warning: #e9b35e;
+    --warning-surface: #2d2211;
+    --error: #f08a83;
+    --error-surface: #2e1614;
+  }
+}
+
 @theme inline {
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-sans: var(--font-karla), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-karla), ui-sans-serif, system-ui, sans-serif;
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-surface: var(--success-surface);
+  --color-success-border: var(--success-border);
+  --color-warning: var(--warning);
+  --color-warning-surface: var(--warning-surface);
+  --color-error: var(--error);
+  --color-error-surface: var(--error-surface);
+}
+
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--border);
+  }
+
+  /* Square everywhere; native controls included. */
+  input,
+  select,
+  button {
+    border-radius: 0;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 1px;
+  }
+
+  /* Times are typed; the picker icon only costs width in the hours grid. */
+  input[type='time']::-webkit-calendar-picker-indicator {
+    display: none;
+  }
 }
 
 @layer components {
-  .card {
-    @apply rounded-2xl bg-white/90 shadow-lg ring-1 shadow-slate-900/10 ring-slate-900/5 backdrop-blur-md;
+  .btn {
+    @apply inline-flex h-8 shrink-0 items-center justify-center gap-1.5 px-2.5 text-sm font-medium whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
+  }
+
+  .btn-outline {
+    @apply border bg-surface text-foreground hover:bg-muted;
+  }
+
+  .btn-ghost {
+    @apply text-foreground hover:bg-muted;
+  }
+
+  .btn-icon {
+    @apply size-8 px-0;
   }
 
   .field {
-    @apply w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-900 shadow-xs focus:border-sky-500 focus:ring-2 focus:ring-sky-500/30 focus:outline-none;
+    @apply h-9 w-full min-w-0 border bg-surface px-2.5 text-sm text-foreground placeholder:text-muted-foreground;
   }
 
-  .button {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50;
+  .badge {
+    @apply inline-flex h-5 shrink-0 items-center rounded-[2px] px-1.5 text-xs font-medium;
   }
-}
 
-/* A sparse, tiled field of stars for the night sky. */
-.stars {
-  background-image:
-    radial-gradient(1.5px 1.5px at 20px 30px, #fff, transparent),
-    radial-gradient(1px 1px at 90px 120px, #fff, transparent),
-    radial-gradient(1px 1px at 160px 60px, #e0e7ff, transparent),
-    radial-gradient(1.5px 1.5px at 230px 170px, #fff, transparent),
-    radial-gradient(1px 1px at 300px 40px, #fff, transparent),
-    radial-gradient(1px 1px at 340px 210px, #c7d2fe, transparent),
-    radial-gradient(1.5px 1.5px at 60px 250px, #fff, transparent),
-    radial-gradient(1px 1px at 190px 280px, #fff, transparent);
-  background-size: 360px 300px;
-}
-
-@keyframes ring-out {
-  from {
-    transform: scale(0.9);
-    opacity: 0.6;
-  }
-  to {
-    transform: scale(1.6);
-    opacity: 0;
+  .label {
+    @apply text-[13px] font-medium text-muted-foreground;
   }
 }
 
-.ring-out {
-  animation: ring-out 1.4s ease-out infinite;
-}
-
+/* A new result fades in, so the change is visible without drawing the eye for long. */
 @keyframes settle {
   from {
-    transform: translateY(6px);
     opacity: 0;
-  }
-  to {
-    transform: none;
-    opacity: 1;
   }
 }
 
 .settle {
-  animation: settle 0.35s ease-out both;
+  animation: settle 0.2s ease-out both;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ring-out,
   .settle {
     animation: none;
   }

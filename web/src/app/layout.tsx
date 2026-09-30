@@ -1,10 +1,9 @@
 import type { Metadata, Viewport } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Karla } from 'next/font/google';
 import type { ReactNode } from 'react';
 import './globals.css';
 
-const sans = Geist({ subsets: ['latin'], variable: '--font-geist-sans' });
-const mono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono' });
+const karla = Karla({ subsets: ['latin'], variable: '--font-karla' });
 
 export const metadata: Metadata = {
   title: 'Harbor Auto · Call routing',
@@ -12,13 +11,16 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0f172a',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#eceff1' },
+    { media: '(prefers-color-scheme: dark)', color: '#111619' },
+  ],
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${sans.variable} ${mono.variable}`}>
-      <body className="min-h-screen bg-slate-950 font-sans text-slate-900 antialiased">{children}</body>
+    <html lang="en" className={karla.variable}>
+      <body className="min-h-screen bg-background font-sans text-sm text-foreground antialiased">{children}</body>
     </html>
   );
 }
