@@ -1,0 +1,211 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  AWS_REGION: us-west-2
+  TERRAFORM_VERSION: 1.16.4
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+
+jobs:
+  check:
+    name: Typecheck, lint, test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+
+  plan:
+    name: Terraform plan
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Build Lambda packages
+        run: npm run build:api
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - id: fmt
+        name: terraform fmt
+        continue-on-error: true
+        run: terraform fmt -check -recursive -diff infra
+      - name: terraform init
+        run: terraform -chdir=infra init
+      - id: validate
+        name: terraform validate
+        continue-on-error: true
+        run: terraform -chdir=infra validate -no-color
+      - id: plan
+        name: terraform plan
+        continue-on-error: true
+        working-directory: infra
+        run: |
+          if terraform plan -no-color -lock-timeout=2m -out=tfplan > plan.log 2>&1; then
+            terraform show -no-color tfplan > plan.txt
+          else
+            cp plan.log plan.txt
+          fi
+          cat plan.log
+          test -f tfplan
+
+      - name: Comment plan on pull request
+        uses: actions/github-script@v9
+        env:
+          FMT: ${{ steps.fmt.outcome }}
+          VALIDATE: ${{ steps.validate.outcome }}
+          PLAN: ${{ steps.plan.outcome }}
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- terraform-plan -->';
+            const path = 'infra/plan.txt';
+            let plan = fs.existsSync(path) ? fs.readFileSync(path, 'utf8').trim() : 'Plan did not run.';
+            const summary = plan.match(/^(Plan: .*|No changes\..*)$/m)?.[0];
+            // Move change markers to column 0 so GitHub's diff highlighting applies.
+            plan = plan.replace(/^( *)(-\/\+|[-+~]) /gm, (_, indent, mark) =>
+              `${mark === '+' || mark === '-' ? mark : '!'}${indent} `);
+            const limit = 60000;
+            if (plan.length > limit) plan = `${plan.slice(0, limit)}\n\n… truncated; see the workflow log.`;
+
+            const result = (outcome) => (outcome === 'success' ? 'passed' : `**${outcome}**`);
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = [
+              marker,
+              '### Terraform plan · `infra/`',
+              '',
+              '| fmt | validate | plan |',
+              '| --- | --- | --- |',
+              `| ${result(process.env.FMT)} | ${result(process.env.VALIDATE)} | ${result(process.env.PLAN)} |`,
+              '',
+              summary ? `**${summary}**` : '',
+              '',
+              '<details><summary>Show plan</summary>',
+              '',
+              '```diff',
+              plan,
+              '```',
+              '',
+              '</details>',
+              '',
+              `<sub>${context.payload.pull_request.head.sha.slice(0, 7)} · [workflow run](${runUrl})</sub>`,
+            ].join('\n');
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              ...context.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find((c) => c.user?.type === 'Bot' && c.body?.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ ...context.repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number, body });
+            }
+
+      - name: Fail if a Terraform check failed
+        if: steps.fmt.outcome != 'success' || steps.validate.outcome != 'success' || steps.plan.outcome != 'success'
+        run: exit 1
+
+  deploy:
+    name: Deploy
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: check
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ steps.infra.outputs.web_url }}
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Build Lambda packages
+        run: npm run build:api
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: terraform apply
+        working-directory: infra
+        run: |
+          terraform init
+          terraform plan -no-color -lock-timeout=5m -out=tfplan
+          terraform apply -no-color tfplan
+      - id: infra
+        name: Read Terraform outputs
+        working-directory: infra
+        run: |
+          for name in api_url web_url amplify_app_id amplify_branch; do
+            echo "$name=$(terraform output -raw "$name")" >> "$GITHUB_OUTPUT"
+          done
+
+      - name: Build web
+        run: npm run build:web
+        env:
+          NEXT_PUBLIC_API_URL: ${{ steps.infra.outputs.api_url }}
+          NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}
+          NEXT_PUBLIC_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      - name: Deploy web to Amplify
+        run: scripts/deploy-web.sh "$APP_ID" "$BRANCH" web/out
+        env:
+          APP_ID: ${{ steps.infra.outputs.amplify_app_id }}
+          BRANCH: ${{ steps.infra.outputs.amplify_branch }}
+
+      - name: Smoke test
+        run: |
+          curl --fail --silent --show-error "$API_URL/v1/health"
+          curl --fail --silent --show-error --output /dev/null "$WEB_URL"
+        env:
+          API_URL: ${{ steps.infra.outputs.api_url }}
+          WEB_URL: ${{ steps.infra.outputs.web_url }}
