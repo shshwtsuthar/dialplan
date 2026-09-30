@@ -250,9 +250,3 @@
 .settle {
   animation: settle 0.2s ease-out both;
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .settle {
-    animation: none;
-  }
-}

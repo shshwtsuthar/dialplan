@@ -18,8 +18,9 @@ const PRESETS: { id: Preset; label: string; hint: string }[] = [
 ];
 
 export const OTHER_CALLERS = [
-  { number: '+17605550123', name: 'New customer' },
-  { number: '+14425550188', name: 'Returning customer' },
+  { number: '+12125550123', name: 'New customer' },
+  { number: '+12065550188', name: 'Returning customer' },
+  { number: '+442079460123', name: 'Customer in London' },
   { number: 'anonymous', name: 'Withheld number' },
 ] as const;
 

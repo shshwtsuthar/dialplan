@@ -1,11 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { describeTarget, formatPhone, normalizePhone, relativeTime, summarizeWeek } from './format';
+import { describeTarget, formatCallTime, formatPhone, normalizePhone, relativeTime, summarizeWeek } from './format';
 
 describe('formatPhone', () => {
   it('formats North American numbers', () => {
     expect(formatPhone('+16195550100')).toBe('(619) 555-0100');
     expect(formatPhone('anonymous')).toBe('Withheld');
-    expect(formatPhone('+442071838750')).toBe('+442071838750');
+  });
+
+  it('formats London numbers', () => {
+    expect(formatPhone('+442079460123')).toBe('+44 20 7946 0123');
+  });
+
+  it('leaves other numbers as they are', () => {
+    expect(formatPhone('+33123456789')).toBe('+33123456789');
   });
 });
 
@@ -56,5 +63,16 @@ describe('normalizePhone', () => {
     expect(normalizePhone('1-619-555-0166')).toBe('+16195550166');
     expect(normalizePhone('+1 619 555 0166')).toBe('+16195550166');
     expect(normalizePhone('555-0166')).toBe('555-0166');
+  });
+});
+
+describe('formatCallTime', () => {
+  it('gives the local time with its zone and offset, on either side of the clock change', () => {
+    expect(formatCallTime('2026-09-30T07:01:34.535-07:00', 'America/Los_Angeles')).toBe(
+      'Wed 30 Sep 2026, 07:01 PDT (UTC-07:00) in America/Los_Angeles',
+    );
+    expect(formatCallTime('2026-11-24T19:00:00.000-08:00', 'America/Los_Angeles')).toBe(
+      'Tue 24 Nov 2026, 19:00 PST (UTC-08:00) in America/Los_Angeles',
+    );
   });
 });

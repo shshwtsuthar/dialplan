@@ -1,6 +1,5 @@
 import {
   ApiError,
-  AuditResponse,
   Dialplan,
   ResetResponse,
   RouteResponse,
@@ -45,8 +44,6 @@ export const api = {
 
   saveRules: (did: string, version: number, rules: Rules) =>
     request(Dialplan, `${numberPath(did)}/rules`, { method: 'PUT', body: JSON.stringify({ version, rules }) }),
-
-  audit: (did: string) => request(AuditResponse, `${numberPath(did)}/audit?limit=20`),
 
   async route(call: RouteRequest): Promise<RouteResult> {
     const started = performance.now();

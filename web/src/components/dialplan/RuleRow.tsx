@@ -4,10 +4,9 @@ import type { Destination, Dialplan, DestinationKind, RuleId, Rules, Weekday } f
 import { IconPencil } from '@tabler/icons-react';
 import { DateTime } from 'luxon';
 import { cn } from '@/lib/cn';
+import type { RuleState } from '@/lib/callPath';
 import { DESTINATION_KINDS, formatPhone, RULE_TITLES, summarizeWeek } from '@/lib/format';
 import { RuleEditor } from './RuleEditor';
-
-export type Outcome = 'matched' | 'no_match' | 'disabled' | 'not_reached';
 
 const DESTINATION_VERB: Record<DestinationKind, string> = {
   ring_group: 'Rings',
@@ -20,7 +19,12 @@ interface Props {
   rule: RuleId;
   step: number;
   dialplan: Dialplan;
-  outcome: Outcome | undefined;
+  /** How the latest call fared here, as the replay reaches this rule. */
+  state: RuleState;
+  /** The rule engine's reason, once the call has been checked here. */
+  reason: string | undefined;
+  /** A call is in progress: keep a line for the outcome from the start, so the column doesn't grow as the call is checked. */
+  reserve: boolean;
   today: { date: string; weekday: Weekday } | undefined;
   editing: boolean;
   onEdit: () => void;
@@ -29,15 +33,17 @@ interface Props {
   onReload: () => Promise<void>;
 }
 
-export function RuleRow({ rule, step, dialplan, outcome, today, editing, onEdit, onClose, onSave, onReload }: Props) {
+export function RuleRow({ rule, step, dialplan, state, reason, reserve, today, editing, onEdit, onClose, onSave, onReload }: Props) {
   const settings = dialplan.rules[rule];
   const enabled = !('enabled' in settings) || settings.enabled;
-  const matched = !editing && outcome === 'matched';
+  const matched = !editing && state === 'matched';
+  const checking = !editing && state === 'checking';
+  const checked = state === 'matched' || state === 'no_match' || state === 'disabled';
 
   return (
-    <li className={cn('relative', matched && 'bg-success-surface')}>
-      {(matched || editing) && (
-        <span aria-hidden className={cn('absolute inset-y-0 left-0 w-0.5', editing ? 'bg-foreground' : 'bg-success')} />
+    <li className={cn('relative transition-colors', matched && 'bg-success-surface')}>
+      {(matched || checking || editing) && (
+        <span aria-hidden className={cn('absolute inset-y-0 left-0 w-0.5', matched ? 'bg-success' : 'bg-foreground')} />
       )}
       {editing ? (
         <RuleEditor rule={rule} dialplan={dialplan} onClose={onClose} onSave={onSave} onReload={onReload} />
@@ -47,11 +53,10 @@ export function RuleRow({ rule, step, dialplan, outcome, today, editing, onEdit,
             <span className="w-4 shrink-0 text-muted-foreground tabular-nums">{step}</span>
             <h3 className="truncate font-semibold">{RULE_TITLES[rule]}</h3>
             {!enabled && <span className="badge bg-muted text-muted-foreground">Off</span>}
-            {outcome === 'matched' && (
-              <span className="badge border border-success-border text-success">Matched</span>
+            {state === 'matched' && (
+              <span className="settle badge border border-success-border text-success">Matched</span>
             )}
-            {outcome === 'no_match' && <span className="badge bg-muted text-muted-foreground">No match</span>}
-            {outcome === 'not_reached' && <span className="text-[13px] text-muted-foreground">Not checked</span>}
+            {state === 'no_match' && <span className="settle badge bg-muted text-muted-foreground">No match</span>}
             <button
               type="button"
               onClick={onEdit}
@@ -63,6 +68,14 @@ export function RuleRow({ rule, step, dialplan, outcome, today, editing, onEdit,
             </button>
           </div>
           <div className={cn('space-y-1.5 pl-[26px]', !enabled && 'text-muted-foreground')}>
+            {reserve && (
+              <p className={cn('text-[13px] break-words text-muted-foreground', (checked || state === 'not_reached') && 'settle')}>
+                {state === 'checking' && 'Checking…'}
+                {state === 'not_reached' && 'Not checked: an earlier rule matched.'}
+                {checked && reason}
+                {state === undefined && '\u00a0'}
+              </p>
+            )}
             <RuleSummary rule={rule} rules={dialplan.rules} today={today} />
             <DestinationLine destination={settings.destination} />
           </div>
