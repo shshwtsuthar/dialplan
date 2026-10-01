@@ -63,6 +63,23 @@ module "reset_function" {
   ]
 }
 
+module "visit_function" {
+  source = "./modules/function"
+
+  name                 = "visit"
+  description          = "POST /v1/visit: email the owner when someone opens the page"
+  zip_path             = "${local.lambda_dist}/visit.zip"
+  permissions_boundary = local.workload_boundary_arn
+  environment = {
+    TOPIC_ARN  = aws_sns_topic.alarms.arn
+    WEB_ORIGIN = local.web_url
+  }
+
+  policy_statements = [
+    { sid = "EmailTheOwner", actions = ["sns:Publish"], resources = [aws_sns_topic.alarms.arn] },
+  ]
+}
+
 # New IAM permissions can take a couple of minutes to reach DynamoDB, so
 # wait before the first invocation after the reset function's policy changes.
 resource "time_sleep" "reset_policy_propagation" {

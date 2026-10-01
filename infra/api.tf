@@ -8,12 +8,14 @@ locals {
     "GET /v1/numbers/{did}/audit"        = "rules"
     "GET /v1/tenants/{tenantId}/numbers" = "rules"
     "POST /v1/demo/reset"                = "reset"
+    "POST /v1/visit"                     = "visit"
   }
 
   api_functions = {
     route = module.route_function
     rules = module.rules_function
     reset = module.reset_function
+    visit = module.visit_function
   }
 
   # Requests per second (steady rate / burst). Everything else gets the
@@ -21,6 +23,7 @@ locals {
   api_throttles = {
     "PUT /v1/numbers/{did}/rules" = { rate = 5, burst = 10 }
     "POST /v1/demo/reset"         = { rate = 1, burst = 2 }
+    "POST /v1/visit"              = { rate = 1, burst = 3 }
   }
 }
 

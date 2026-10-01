@@ -22,6 +22,7 @@ env:
   TERRAFORM_VERSION: 1.16.4
   TF_IN_AUTOMATION: "true"
   TF_INPUT: "false"
+  TF_VAR_alarm_email: ${{ vars.ALARM_EMAIL }}
 
 jobs:
   check:

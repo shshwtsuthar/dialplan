@@ -55,6 +55,12 @@ data "aws_iam_policy_document" "workload_boundary" {
     actions   = ["lambda:InvokeFunction"]
     resources = [local.functions]
   }
+
+  statement {
+    sid       = "PublishNotifications"
+    actions   = ["sns:Publish"]
+    resources = [local.topics]
+  }
 }
 
 resource "aws_iam_policy" "workload_boundary" {

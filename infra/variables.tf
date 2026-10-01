@@ -11,7 +11,7 @@ variable "local_web_origins" {
 }
 
 variable "alarm_email" {
-  description = "Optional address to email when an alarm changes state (confirm the subscription email)."
+  description = "Optional address to email when an alarm changes state or someone opens the page (confirm the subscription email)."
   type        = string
   default     = null
 }
