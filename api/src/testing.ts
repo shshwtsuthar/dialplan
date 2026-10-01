@@ -69,15 +69,22 @@ export class MemoryStore implements Store {
 
 export function httpEvent(
   routeKey: string,
-  init: { path?: Record<string, string>; query?: Record<string, string>; body?: unknown } = {},
+  init: {
+    path?: Record<string, string>;
+    query?: Record<string, string>;
+    headers?: Record<string, string>;
+    ip?: string;
+    body?: unknown;
+  } = {},
 ): HttpEvent {
   return {
     routeKey,
     pathParameters: init.path,
     queryStringParameters: init.query,
     body: init.body === undefined ? undefined : typeof init.body === 'string' ? init.body : JSON.stringify(init.body),
+    headers: init.headers ?? {},
     isBase64Encoded: false,
-    requestContext: { requestId: 'test' },
+    requestContext: { requestId: 'test', http: { sourceIp: init.ip ?? '127.0.0.1' } },
   } as HttpEvent;
 }
 

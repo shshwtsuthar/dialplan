@@ -13,6 +13,7 @@ import { formatPhone } from '@/lib/format';
 import type { Replay } from '@/lib/replay';
 import { themeAt } from '@/lib/theme';
 import { refreshNow } from '@/lib/useNow';
+import { announceVisit } from '@/lib/visit';
 import { AboutDialog } from './AboutDialog';
 import { BuildInfo } from './BuildInfo';
 import { CallPanel, OTHER_CALLERS, type Preset } from './CallPanel';
@@ -47,6 +48,8 @@ export function Demo() {
   useEffect(() => {
     if (theme) document.documentElement.dataset.theme = theme;
   }, [theme]);
+
+  useEffect(announceVisit, []);
 
   const show = useCallback((plan: Dialplan) => {
     setDialplan(plan);
